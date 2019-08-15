@@ -105,7 +105,6 @@ class TestCRUD:
         assert doc.acknowledged
         assert doc.inserted_id == test_data["_id"]
 
-    @my_params
     @mongomock.patch(servers=sockets)
     def test_insert_many(self, mock_mongo, all_test_data):
         _ids = [random.randint(1, 1230242) for i in range(len(all_test_data))]
@@ -130,7 +129,6 @@ class TestCRUD:
         assert find_one(client, {"_id": str(doc.inserted_id)}) is None
         assert find_one(client, {"name": test_data["name"]}) == test_data
 
-    @my_params
     @mongomock.patch(servers=sockets)
     def test_find_many(self, mock_mongo, all_test_data):
         insert_many(mock_mongo, all_test_data)
@@ -146,7 +144,6 @@ class TestCRUD:
             ]
         ), "it's possibly a wrong test, ask me about it"
 
-    @my_params
     @mongomock.patch(servers=sockets)
     def test_update_without_creating(self, mock_mongo, all_test_data):
         data1, data2 = all_test_data[:2]
@@ -158,7 +155,6 @@ class TestCRUD:
         set_new_value(  mock_mongo, {"name": new_names[1]}, "name", new_names[2], create_new=False)
         assert find_many(mock_mongo, {"name": new_names[2]}).count() == 0
 
-    @my_params
     @mongomock.patch(servers=sockets)
     def test_update_with_creating(self, mock_mongo, all_test_data):
         data1, data2 = all_test_data[:2]
