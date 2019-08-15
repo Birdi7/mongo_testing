@@ -13,7 +13,7 @@ from src.db_worker import (
     insert_many,
     find_one,
     find_many,
-    update_one,
+    set_new_value,
 )
 import pytest
 from pymongo import MongoClient
@@ -152,8 +152,20 @@ class TestCRUD:
         data1, data2 = all_test_data[:2]
         insert_many(mock_mongo, [data1, data2])
         new_names = [f"New name{i}" for i in range(3)]
-        update_one(mock_mongo, {"name": data1["name"]}, "name", new_names[0])
+        set_new_value(mock_mongo, {"name": data1["name"]}, "name", new_names[0])
         assert find_many(mock_mongo, {"name": new_names[0]}).count() == 1
 
-        update_one(mock_mongo, {"name": new_names[1]}, "name", new_names[2])
+        set_new_value(  mock_mongo, {"name": new_names[1]}, "name", new_names[2], create_new=False)
         assert find_many(mock_mongo, {"name": new_names[2]}).count() == 0
+
+    @my_params
+    @mongomock.patch(servers=sockets)
+    def test_update_with_creating(self, mock_mongo, all_test_data):
+        data1, data2 = all_test_data[:2]
+        insert_many(mock_mongo, [data1, data2])
+        new_names = [f"New name{i}" for i in range(3)]
+        set_new_value(mock_mongo, {"name": data1["name"]}, "name", new_names[0])
+        assert find_many(mock_mongo, {"name": new_names[0]}).count() == 1
+
+        set_new_value(  mock_mongo, {"name": new_names[1]}, "name", new_names[2], create_new=True)
+        assert find_many(mock_mongo, {"name": new_names[2]}).count() == 1

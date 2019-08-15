@@ -50,6 +50,7 @@ def set_new_value(
     contidion,
     field,
     new_value,
+    create_new: bool,
     db_name="test_db",
     collection_name="test_collection",
 ) -> InsertOneResult:
