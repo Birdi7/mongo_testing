@@ -7,7 +7,7 @@ import random
 from mongomock import ObjectId
 from pymongo.results import InsertOneResult
 
-from src.db_worker import get_client, insert_one
+from src.db_worker import get_client, insert_one, find_one
 import pytest
 from pymongo import MongoClient
 import mongomock
@@ -24,21 +24,18 @@ sockets = tuple(zip(servers, ports))
 
 
 @pytest.fixture
-def test_data() -> Dict:
-    return random.choice(
-        [
-            {
-                "name": "Temp name 1",
-                "parameters": {"location": "Innopolis", "value": 7},
-            },
-            {
-                "name": "Temp name 2",
-                "parameters": {"location": "Innopolis", "value": 3},
-            },
-            {"name": "Temp name 3", "parameters": {"location": "Kazan", "value": 7}},
-            {"name": "Temp name 4", "parameters": {"location": "Kazan", "value": 5}},
-        ]
-    )
+def all_test_data():
+    return [
+        {"name": "Temp name 1", "parameters": {"location": "Innopolis", "value": 7}},
+        {"name": "Temp name 2", "parameters": {"location": "Innopolis", "value": 3}},
+        {"name": "Temp name 3", "parameters": {"location": "Kazan", "value": 7}},
+        {"name": "Temp name 4", "parameters": {"location": "Kazan", "value": 5}},
+    ]
+
+
+@pytest.fixture
+def test_data(all_test_data) -> Dict:
+    return random.choice(all_test_data)
 
 
 def my_params(func):
@@ -81,11 +78,16 @@ class TestCRUD:
     @mongomock.patch(servers=sockets)
     def test_insert_one(self, server_name, port, test_data):
         client = mongomock.MongoClient(server_name, port)
-        test_data['_id'] = ObjectId()
+        test_data["_id"] = ObjectId()
         doc = insert_one(client, test_data)
         assert isinstance(doc, InsertOneResult)
         assert doc.acknowledged
-        assert doc.inserted_id == test_data['_id']
+        assert doc.inserted_id == test_data["_id"]
+
+    @my_params
+    @mongomock.patch(servers=sockets)
+    def test_insert_many(self, server_name, port, all_test_data):
+        raise NotImplementedError
 
     @my_params
     @mongomock.patch(servers=sockets)
@@ -93,12 +95,10 @@ class TestCRUD:
         client = mongomock.MongoClient(server_name, port)
 
         doc = insert_one(client, test_data)
-        assert find_one(client, test_data)['_id'] == doc.inserted_id
+        assert find_one(client, test_data)["_id"] == doc.inserted_id
 
-        test_data.update({
-            '_id': ObjectId(doc.inserted_id)
-        })
+        test_data.update({"_id": ObjectId(doc.inserted_id)})
         assert find_one(client, test_data) == test_data
-        assert find_one(client, {'_id': doc.inserted_id}) == test_data
-        assert find_one(client, {'_id': str(doc.inserted_id)}) is None
-        assert find_one(client, {'name': test_data['name']}) == test_data
+        assert find_one(client, {"_id": doc.inserted_id}) == test_data
+        assert find_one(client, {"_id": str(doc.inserted_id)}) is None
+        assert find_one(client, {"name": test_data["name"]}) == test_data
