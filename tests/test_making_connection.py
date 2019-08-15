@@ -152,7 +152,9 @@ class TestCRUD:
         set_new_value(mock_mongo, {"name": data1["name"]}, "name", new_names[0])
         assert find_many(mock_mongo, {"name": new_names[0]}).count() == 1
 
-        set_new_value(  mock_mongo, {"name": new_names[1]}, "name", new_names[2], create_new=False)
+        set_new_value(
+            mock_mongo, {"name": new_names[1]}, "name", new_names[2], create_new=False
+        )
         assert find_many(mock_mongo, {"name": new_names[2]}).count() == 0
 
     @mongomock.patch(servers=sockets)
@@ -163,5 +165,7 @@ class TestCRUD:
         set_new_value(mock_mongo, {"name": data1["name"]}, "name", new_names[0])
         assert find_many(mock_mongo, {"name": new_names[0]}).count() == 1
 
-        set_new_value(  mock_mongo, {"name": new_names[1]}, "name", new_names[2], create_new=True)
+        set_new_value(
+            mock_mongo, {"name": new_names[1]}, "name", new_names[2], create_new=True
+        )
         assert find_many(mock_mongo, {"name": new_names[2]}).count() == 1
