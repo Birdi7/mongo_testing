@@ -83,3 +83,16 @@ class TestBasicConnection:
         assert isinstance(doc, InsertOneResult)
         assert doc.acknowledged
         assert doc.inserted_id == test_data['_id']
+
+    @my_params
+    @mongomock.patch(servers=sockets)
+    def test_find_one(self, server_name, port, test_data):
+        client = mongomock.MongoClient(server_name, port)
+
+        doc = insert_one(client, test_data)
+        assert find_one(client, test_data)['_id'] == doc.inserted_id
+
+        test_data.update({
+            '_id': ObjectId(doc.inserted_id)
+        })
+        assert find_one(client, test_data) == test_data
