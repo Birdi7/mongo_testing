@@ -43,3 +43,14 @@ def find_many(
     collection_name="test_collection",
 ) -> Cursor:
     raise NotImplementedError
+
+
+def set_new_value(
+    client: MongoClient,
+    contidion,
+    field,
+    new_value,
+    db_name="test_db",
+    collection_name="test_collection",
+) -> InsertOneResult:
+    raise NotImplementedError

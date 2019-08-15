@@ -7,7 +7,14 @@ import random
 from mongomock import ObjectId
 from pymongo.results import InsertOneResult
 
-from src.db_worker import get_client, insert_one, insert_many, find_one, find_many
+from src.db_worker import (
+    get_client,
+    insert_one,
+    insert_many,
+    find_one,
+    find_many,
+    update_one,
+)
 import pytest
 from pymongo import MongoClient
 import mongomock
@@ -129,8 +136,24 @@ class TestCRUD:
         insert_many(mock_mongo, all_test_data)
         assert find_many(mock_mongo, {}).count() == len(all_test_data)
 
-        assert find_many(mock_mongo, {"parameters.location": "Innopolis"}).count() == len(
-            [data for data in all_test_data if data.get('parameters').get('location') == 'Innopolis']
+        assert find_many(
+            mock_mongo, {"parameters.location": "Innopolis"}
+        ).count() == len(
+            [
+                data
+                for data in all_test_data
+                if data.get("parameters").get("location") == "Innopolis"
+            ]
         ), "it's possibly a wrong test, ask me about it"
 
+    @my_params
+    @mongomock.patch(servers=sockets)
+    def test_update_without_creating(self, mock_mongo, all_test_data):
+        data1, data2 = all_test_data[:2]
+        insert_many(mock_mongo, [data1, data2])
+        new_names = [f"New name{i}" for i in range(3)]
+        update_one(mock_mongo, {"name": data1["name"]}, "name", new_names[0])
+        assert find_many(mock_mongo, {"name": new_names[0]}).count() == 1
 
+        update_one(mock_mongo, {"name": new_names[1]}, "name", new_names[2])
+        assert find_many(mock_mongo, {"name": new_names[2]}).count() == 0
