@@ -2,7 +2,11 @@ import functools
 
 import pymongo
 import random
-from src.db_worker import get_client
+
+from mongomock import ObjectId
+from pymongo.results import InsertOneResult
+
+from src.db_worker import get_client, insert_one
 import pytest
 from pymongo import MongoClient
 import mongomock
@@ -15,7 +19,8 @@ def mock_mongo():
 
 servers = ["server.example.com", "server2.example.com"]
 ports = [27017, 27024]
-sockets = zip(servers, ports)
+sockets = tuple(zip(servers, ports))
+
 
 @pytest.fixture
 def test_data():
@@ -47,32 +52,34 @@ def my_params(func):
 
 class TestBasicConnection:
     @my_params
-    def test_establishing_invalid_connection(self, server_name, port, test_data):
-        with pytest.raises(pymongo.errors.ServerSelectionTimeoutError):
-            client: MongoClient = get_client(server_name, port, serverSelectionTimeoutMS=1)
-            assert client.server_selection_timeout == 1
-            client.test_db.collect.insert_one(test_data)
-
-    @pytest.mark.parametrize("server_name", servers)
-    @pytest.mark.parametrize("port", map(str, ports))
-    def test_invalid_ports(self, server_name, port):
-        with pytest.raises(TypeError):
-            client = get_client(server_name, port, serverSelectionTimeoutMS=1)
-
-    @my_params
     def test_client_connection(self, server_name, port):
         client1 = get_client(server_name, port)
         assert isinstance(client1, MongoClient)
 
-        assert client1.HOST == server_name
-        assert client1.PORT == port
-        client2 = get_client(server_name, port)
-        assert client1 is client2, "Two different client were given for the same (host, port) combination"
+    @my_params
+    def test_multiple_clients(self, server_name, port):
+        client1 = get_client(server_name, port)
+        assert get_client(server_name, port) is client1
 
-        new_server_name, new_port = random.choice(zip(servers, ports))
-        # if I put new (host, port) it should be an error
+    @my_params
+    @mongomock.patch(servers=(sockets,))
+    def test_creating_db_and_collections(self, server_name, port, test_data):
+        db_names = [f"test_db_{i}" for i in range(4)]
+        collection_names = [f"collection_{i}" for i in range(3)]
+        client = mongomock.MongoClient(server_name, port)
+        for db in db_names:
+            for coll in collection_names:
+                insert_one(client, test_data, db_name=db, collection_name=coll)
+        assert client.list_database_names() == db_names
+        for db in db_names:
+            assert getattr(client, db).list_collection_names() == collection_names
 
-        with pytest.raises(
-            ValueError
-        ):  # if I got new server&port combination, it should be not allowed
-            _ = get_client(new_server_name, new_port)
+    @my_params
+    @mongomock.patch(servers=(sockets,))
+    def test_insert_one(self, server_name, port, test_data):
+        client = mongomock.MongoClient(server_name, port)
+        test_data['_id'] = ObjectId()
+        doc = insert_one(client, test_data)
+        assert isinstance(doc, InsertOneResult)
+        assert doc.acknowledged
+        assert doc.inserted_id == test_data['_id']
