@@ -62,7 +62,7 @@ class TestBasicConnection:
         assert get_client(server_name, port) is client1
 
     @my_params
-    @mongomock.patch(servers=(sockets,))
+    @mongomock.patch(servers=sockets)
     def test_creating_db_and_collections(self, server_name, port, test_data):
         db_names = [f"test_db_{i}" for i in range(4)]
         collection_names = [f"collection_{i}" for i in range(3)]
@@ -75,7 +75,7 @@ class TestBasicConnection:
             assert getattr(client, db).list_collection_names() == collection_names
 
     @my_params
-    @mongomock.patch(servers=(sockets,))
+    @mongomock.patch(servers=sockets)
     def test_insert_one(self, server_name, port, test_data):
         client = mongomock.MongoClient(server_name, port)
         test_data['_id'] = ObjectId()
