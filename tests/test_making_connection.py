@@ -75,6 +75,8 @@ class TestBasicConnection:
         for db in db_names:
             assert getattr(client, db).list_collection_names() == collection_names
 
+
+class TestCRUD:
     @my_params
     @mongomock.patch(servers=sockets)
     def test_insert_one(self, server_name, port, test_data):
