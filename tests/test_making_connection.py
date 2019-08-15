@@ -7,7 +7,7 @@ import random
 from mongomock import ObjectId
 from pymongo.results import InsertOneResult
 
-from src.db_worker import get_client, insert_one, find_one
+from src.db_worker import get_client, insert_one, insert_many, find_one, find_many
 import pytest
 from pymongo import MongoClient
 import mongomock
@@ -28,7 +28,11 @@ def all_test_data():
     return [
         {"name": "Temp name 1", "parameters": {"location": "Innopolis", "value": 7}},
         {"name": "Temp name 2", "parameters": {"location": "Innopolis", "value": 3}},
-        {"name": "Temp name 3", "parameters": {"location": "Kazan", "value": 7}},
+        {
+            "name": "Temp name 3",
+            "parameters": {"location": "Kazan", "value": 7},
+            "meta_data": {"ip": "127.0.0.1"},
+        },
         {"name": "Temp name 4", "parameters": {"location": "Kazan", "value": 5}},
     ]
 
@@ -36,6 +40,16 @@ def all_test_data():
 @pytest.fixture
 def test_data(all_test_data) -> Dict:
     return random.choice(all_test_data)
+
+
+@pytest.fixture
+def db():
+    return random.choice([f"db_{i}" for i in range(0, 4)])
+
+
+@pytest.fixture
+def collection():
+    return random.choice([f"collection_{i}" for i in range(0, 4)])
 
 
 def my_params(func):
@@ -61,7 +75,7 @@ class TestBasicConnection:
 
     @my_params
     @mongomock.patch(servers=sockets)
-    def test_creating_db_and_collections(self, server_name, port, test_data):
+    def test_creating_db_and_collections_insert_one(self, server_name, port, test_data):
         db_names = [f"test_db_{i}" for i in range(4)]
         collection_names = [f"collection_{i}" for i in range(3)]
         client = mongomock.MongoClient(server_name, port)
@@ -86,8 +100,14 @@ class TestCRUD:
 
     @my_params
     @mongomock.patch(servers=sockets)
-    def test_insert_many(self, server_name, port, all_test_data):
-        raise NotImplementedError
+    def test_insert_many(self, mock_mongo, all_test_data):
+        _ids = [random.randint(1, 1230242) for i in range(len(all_test_data))]
+        all_test_data = [
+            data.update({"_id": ObjectId(_ids[i])})
+            for i, data in enumerate(all_test_data)
+        ]
+        result = insert_many(mock_mongo, all_test_data)
+        assert len(result.inserted_ids) == len(_ids)
 
     @my_params
     @mongomock.patch(servers=sockets)
@@ -102,3 +122,15 @@ class TestCRUD:
         assert find_one(client, {"_id": doc.inserted_id}) == test_data
         assert find_one(client, {"_id": str(doc.inserted_id)}) is None
         assert find_one(client, {"name": test_data["name"]}) == test_data
+
+    @my_params
+    @mongomock.patch(servers=sockets)
+    def test_find_many(self, mock_mongo, all_test_data):
+        insert_many(mock_mongo, all_test_data)
+        assert find_many(mock_mongo, {}).count() == len(all_test_data)
+
+        assert find_many(mock_mongo, {"parameters.location": "Innopolis"}).count() == len(
+            [data for data in all_test_data if data.get('parameters').get('location') == 'Innopolis']
+        ), "it's possibly a wrong test, ask me about it"
+
+
