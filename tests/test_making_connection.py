@@ -1,4 +1,5 @@
 import functools
+from typing import Dict
 
 import pymongo
 import random
@@ -23,7 +24,7 @@ sockets = tuple(zip(servers, ports))
 
 
 @pytest.fixture
-def test_data():
+def test_data() -> Dict:
     return random.choice(
         [
             {
@@ -96,3 +97,6 @@ class TestBasicConnection:
             '_id': ObjectId(doc.inserted_id)
         })
         assert find_one(client, test_data) == test_data
+        assert find_one(client, {'_id': doc.inserted_id}) == test_data
+        assert find_one(client, {'_id': str(doc.inserted_id)}) is None
+        assert find_one(client, {'name': test_data['name']}) == test_data
