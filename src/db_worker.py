@@ -4,9 +4,15 @@ from pymongo import MongoClient
 from pymongo.cursor import Cursor
 from pymongo.results import InsertOneResult, InsertManyResult
 
+conn = None
+
 
 def get_client(host: str, port: int, **kwargs):
-    raise NotImplementedError
+    global conn
+    if conn is None:
+        conn = MongoClient(host, port, **kwargs)
+        return conn
+    return conn
 
 
 def insert_one(
@@ -15,7 +21,8 @@ def insert_one(
     db_name="test_db",
     collection_name="test_collection",
 ) -> InsertOneResult:
-    raise NotImplementedError
+    collection = client[db_name][collection_name]
+    return collection.insert_one(document)
 
 
 def insert_many(
@@ -24,7 +31,8 @@ def insert_many(
     db_name="test_db",
     collection_name="test_collection",
 ) -> InsertManyResult:
-    raise NotImplementedError
+    collection = client[db_name][collection_name]
+    return collection.insert_many(documents)
 
 
 def find_one(
@@ -33,7 +41,8 @@ def find_one(
     db_name="test_db",
     collection_name="test_collection",
 ):
-    raise NotImplementedError
+    collection = client[db_name][collection_name]
+    return collection.find_one(document)
 
 
 def find_many(
@@ -42,7 +51,8 @@ def find_many(
     db_name="test_db",
     collection_name="test_collection",
 ) -> Cursor:
-    raise NotImplementedError
+    collection = client[db_name][collection_name]
+    return collection.find(condition)
 
 
 def set_new_value(
@@ -50,8 +60,17 @@ def set_new_value(
     contidion,
     field,
     new_value,
-    create_new: bool,
+    create_new: bool = False,
     db_name="test_db",
     collection_name="test_collection",
 ) -> InsertOneResult:
-    raise NotImplementedError
+    collection = client[db_name][collection_name]
+    obj = collection.find_one(contidion)
+    if obj is not None:
+        return collection.update_one(contidion, {
+            '$set': {
+                field: new_value
+            }
+        })
+    if obj is None and create_new:
+        return collection.insert_one({field: new_value})

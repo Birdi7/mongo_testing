@@ -107,13 +107,8 @@ class TestCRUD:
 
     @mongomock.patch(servers=sockets)
     def test_insert_many(self, mock_mongo, all_test_data):
-        _ids = [random.randint(1, 1230242) for i in range(len(all_test_data))]
-        all_test_data = [
-            data.update({"_id": ObjectId(_ids[i])})
-            for i, data in enumerate(all_test_data)
-        ]
         result = insert_many(mock_mongo, all_test_data)
-        assert len(result.inserted_ids) == len(_ids)
+        assert len(result.inserted_ids) == len(all_test_data)
 
     @my_params
     @mongomock.patch(servers=sockets)
