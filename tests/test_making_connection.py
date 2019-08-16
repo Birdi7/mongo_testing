@@ -81,6 +81,12 @@ class TestBasicConnection:
         assert get_client(server_name, port) is client1
 
     @my_params
+    def test_2_clients(self, server_name, port):
+        client1 = get_client(server_name, port)
+        client2 = get_client("new.server.name", 3423)
+        assert client1 is not client2
+
+    @my_params
     @mongomock.patch(servers=sockets)
     def test_creating_db_and_collections_insert_one(self, server_name, port, test_data):
         db_names = [f"test_db_{i}" for i in range(4)]
