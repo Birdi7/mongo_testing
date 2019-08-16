@@ -8,7 +8,6 @@ connections = []
 
 
 def get_client(host: str, port: int, **kwargs):
-    global connections
     for conn in connections:
         if conn['host'] == host and conn['port'] == port:
             return conn['client']
