@@ -4,65 +4,72 @@ from pymongo import MongoClient
 from pymongo.cursor import Cursor
 from pymongo.results import InsertOneResult, InsertManyResult
 
-conn = None
+connections = []
 
 
 def get_client(host: str, port: int, **kwargs):
-    global conn
-    if conn is None:
-        conn = MongoClient(host, port, **kwargs)
-        return conn
-    return conn
+    global connections
+    for conn in connections:
+        if conn['host'] == host and conn['port'] == port:
+            return conn['client']
+    connections.append(
+        {
+            'client': MongoClient(host, port, **kwargs),
+            'host': host,
+            'port': port
+        }
+    )
+    return connections[-1]['client']
 
 
 def insert_one(
-    client: MongoClient,
-    document: Dict,
-    db_name="test_db",
-    collection_name="test_collection",
+        client: MongoClient,
+        document: Dict,
+        db_name="test_db",
+        collection_name="test_collection",
 ) -> InsertOneResult:
     collection = client[db_name][collection_name]
     return collection.insert_one(document)
 
 
 def insert_many(
-    client: MongoClient,
-    documents: List[Dict],
-    db_name="test_db",
-    collection_name="test_collection",
+        client: MongoClient,
+        documents: List[Dict],
+        db_name="test_db",
+        collection_name="test_collection",
 ) -> InsertManyResult:
     collection = client[db_name][collection_name]
     return collection.insert_many(documents)
 
 
 def find_one(
-    client: MongoClient,
-    document: Dict,
-    db_name="test_db",
-    collection_name="test_collection",
+        client: MongoClient,
+        document: Dict,
+        db_name="test_db",
+        collection_name="test_collection",
 ):
     collection = client[db_name][collection_name]
     return collection.find_one(document)
 
 
 def find_many(
-    client: MongoClient,
-    condition: Dict,
-    db_name="test_db",
-    collection_name="test_collection",
+        client: MongoClient,
+        condition: Dict,
+        db_name="test_db",
+        collection_name="test_collection",
 ) -> Cursor:
     collection = client[db_name][collection_name]
     return collection.find(condition)
 
 
 def set_new_value(
-    client: MongoClient,
-    contidion,
-    field,
-    new_value,
-    create_new: bool = False,
-    db_name="test_db",
-    collection_name="test_collection",
+        client: MongoClient,
+        contidion,
+        field,
+        new_value,
+        create_new: bool = False,
+        db_name="test_db",
+        collection_name="test_collection",
 ) -> InsertOneResult:
     collection = client[db_name][collection_name]
     obj = collection.find_one(contidion)
